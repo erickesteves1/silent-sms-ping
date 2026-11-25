@@ -51,12 +51,13 @@ public class StoreActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_store);
 
-        // Pad only our own root for the navigation bar + side cutouts; the action bar
-        // handles the top inset (see MainActivity for the rationale).
+        // In-layout Toolbar as the action bar (theme is NoActionBar); pad our own root
+        // for all system bars + cutouts so nothing overlaps under edge-to-edge.
+        setSupportActionBar(findViewById(R.id.toolbar));
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.rootStore), (v, windowInsets) -> {
             Insets bars = windowInsets.getInsets(
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(bars.left, 0, bars.right, bars.bottom);
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return windowInsets;
         });
 

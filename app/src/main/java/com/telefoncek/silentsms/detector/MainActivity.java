@@ -90,14 +90,15 @@ public final class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Edge-to-edge is enforced on Android 15+/16. AppCompat's action bar already
-        // offsets the content below the status bar + action bar (via android.R.id.content),
-        // so here we only pad our own root for the navigation bar and side cutouts.
-        // (We must NOT touch android.R.id.content's padding, or that top offset is lost.)
+        // Use an in-layout Toolbar as the action bar (theme is NoActionBar) so nothing
+        // from the system decor overlaps our content under the enforced edge-to-edge on
+        // Android 15+/16. We pad our own root for all system bars + display cutouts; the
+        // Toolbar, as the first child, then sits just below the status bar.
+        setSupportActionBar(findViewById(R.id.toolbar));
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.rootMain), (v, windowInsets) -> {
             Insets bars = windowInsets.getInsets(
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(bars.left, 0, bars.right, bars.bottom);
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return windowInsets;
         });
 
