@@ -8,6 +8,9 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsMessage;
 import android.util.Log;
@@ -47,6 +50,16 @@ public class StoreActivity extends AppCompatActivity {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_store);
+
+        // Edge-to-edge is enforced on Android 15+/16; pad content for the navigation
+        // bar and display cutouts (the action bar handles the status-bar inset).
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, windowInsets) -> {
+            Insets bars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            v.setPadding(bars.left, 0, bars.right, bars.bottom);
+            return windowInsets;
+        });
+
         preferences = getSharedPreferences(PREF_DATA_SMS_STORE, Context.MODE_PRIVATE);
         ActionBar ab = getSupportActionBar();
         if (ab != null) {

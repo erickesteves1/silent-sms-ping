@@ -16,6 +16,9 @@ import android.provider.ContactsContract;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import android.telephony.SmsManager;
@@ -87,6 +90,17 @@ public final class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Android 15+ (API 35) / Android 16 (API 36) enforce edge-to-edge and remove
+        // the opt-out, so content is drawn behind the system bars. The AppCompat action
+        // bar already handles the status-bar (top) inset; here we pad the content for the
+        // navigation bar (bottom) and any display cutouts on the sides.
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, windowInsets) -> {
+            Insets bars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            v.setPadding(bars.left, 0, bars.right, bars.bottom);
+            return windowInsets;
+        });
+
         phoneNumber = findViewById(R.id.phoneNumber);
         statusText = findViewById(R.id.sendStatus);
         resultText = findViewById(R.id.resultStatus);
@@ -108,8 +122,8 @@ public final class MainActivity extends AppCompatActivity {
 
         resultPduDetails.setOnClickListener(v -> showPduInfoDialog());
 
-        sentPI = PendingIntent.getBroadcast(this, 0x1337, new Intent(SENT), PendingIntent.FLAG_CANCEL_CURRENT|PendingIntent.FLAG_MUTABLE);
-        deliveryPI = PendingIntent.getBroadcast(this, 0x1337, new Intent(DELIVER), PendingIntent.FLAG_CANCEL_CURRENT|PendingIntent.FLAG_MUTABLE);
+        sentPI = PendingIntent.getBroadcast(this, 0x1337, new Intent(SENT).setPackage(getPackageName()), PendingIntent.FLAG_CANCEL_CURRENT|PendingIntent.FLAG_MUTABLE);
+        deliveryPI = PendingIntent.getBroadcast(this, 0x1337, new Intent(DELIVER).setPackage(getPackageName()), PendingIntent.FLAG_CANCEL_CURRENT|PendingIntent.FLAG_MUTABLE);
 
         historyAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_2, android.R.id.text1);
         historyList.setAdapter(historyAdapter);
@@ -192,9 +206,11 @@ public final class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        registerReceiver(br, sentFilter);
-        registerReceiver(br, deliveryFilter);
-        registerReceiver(br, wapDeliveryFilter);
+        // API 34+ requires an explicit export flag for context-registered receivers.
+        // These broadcasts are internal to the app, so they must not be exported.
+        ContextCompat.registerReceiver(this, br, sentFilter, ContextCompat.RECEIVER_NOT_EXPORTED);
+        ContextCompat.registerReceiver(this, br, deliveryFilter, ContextCompat.RECEIVER_NOT_EXPORTED);
+        ContextCompat.registerReceiver(this, br, wapDeliveryFilter, ContextCompat.RECEIVER_NOT_EXPORTED);
         String ns = Context.NOTIFICATION_SERVICE;
         NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.cancelAll();

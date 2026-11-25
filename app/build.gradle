@@ -2,20 +2,20 @@ apply plugin: 'com.android.application'
 apply plugin: 'project-report'
 
 android {
-    compileSdkVersion 33
-    buildToolsVersion '33.0.2'
+    namespace 'com.telefoncek.silentsms.detector'
+    compileSdk 36
 
     compileOptions {
-        sourceCompatibility = 11
-        targetCompatibility = 11
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
 
     defaultConfig {
         applicationId 'com.telefoncek.silentsms.detector'
-        minSdkVersion 23
-        targetSdkVersion 33
-        versionCode 6
-        versionName "4"
+        minSdk 23
+        targetSdk 36
+        versionCode 7
+        versionName "5"
     }
 
     buildTypes {
@@ -33,8 +33,12 @@ dependencies {
         exclude group: 'org.mobicents.protocols.ss7.sccp', module: 'sccp-api'
         exclude group: 'org.mobicents.protocols.ss7.sccp', module: 'sccp'
     }
+    // Align all transitive Kotlin stdlib modules (some deps still pull the old
+    // kotlin-stdlib-jdk7/jdk8:1.6.21, whose classes were merged into the main
+    // stdlib in Kotlin 1.8+, causing duplicate-class build failures).
+    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.22')
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'org.mobicents.protocols.ss7.map:map-impl:8.0.112', withoutMTP
     testImplementation 'junit:junit:4.13.2'
 }
