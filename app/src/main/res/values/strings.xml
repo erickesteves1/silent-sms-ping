@@ -5,6 +5,7 @@
     <string name="delivered">DELIVERED: phone is online</string>
     <string name="offline">DELIVERY FAILED: phone is offline</string>
     <string name="sent">Silent ping has been sent...</string>
+    <string name="waiting">Pinging… waiting for delivery report</string>
     <string name="notsent">Failed to send silent ping</string>
     <string name="pick_contact">Pick Phone from contacts</string>
     <string name="pick_contact_failed">Failed to select contact</string>

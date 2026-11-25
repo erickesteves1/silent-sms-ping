@@ -12,6 +12,8 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.ContactsContract;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
@@ -80,6 +82,14 @@ public final class MainActivity extends AppCompatActivity {
     PendingIntent sentPI;
     PendingIntent deliveryPI;
 
+    // Always resolve a ping to Online/Offline. Many carriers never return a delivery
+    // report for data SMS, so without this the result would stay blank forever. If no
+    // positive report arrives within this timeout, the target is treated as offline.
+    static final long PING_TIMEOUT_MS = 30_000L;
+    final Handler timeoutHandler = new Handler(Looper.getMainLooper());
+    Runnable pingTimeout;
+    boolean awaitingResult = false;
+
     EditText phoneNumber;
     TextView statusText, resultText;
     ListView historyList;
@@ -108,16 +118,36 @@ public final class MainActivity extends AppCompatActivity {
         historyList = findViewById(R.id.historyList);
         resultPduDetails = findViewById(R.id.resultPduDetails);
 
+        // If no delivery report comes back within the timeout, declare the target offline
+        // so the user always gets a definite Online/Offline answer.
+        pingTimeout = () -> {
+            if (awaitingResult) {
+                awaitingResult = false;
+                resultText.setText(R.string.offline);
+            }
+        };
+
         preferences = getPreferences(Context.MODE_PRIVATE);
         phoneNumber.setText(preferences.getString(PREF_LAST_NUMBER, getString(R.string.phonenumber)));
 
         findViewById(R.id.sendButton).setOnClickListener(v -> {
             final String phoneNum = phoneNumber.getText().toString();
             if (MainActivity.this.checkPermissions() && !TextUtils.isEmpty(phoneNum) && Patterns.PHONE.matcher(phoneNum).matches()) {
-                resultText.setText(null);
                 updateHistory(phoneNum);
-
-                getSystemService(SmsManager.class).sendDataMessage(phoneNum, null, (short) 9200, payload, sentPI, deliveryPI);
+                try {
+                    getSystemService(SmsManager.class).sendDataMessage(phoneNum, null, (short) 9200, payload, sentPI, deliveryPI);
+                    statusText.setText(null);
+                    resultText.setText(R.string.waiting);
+                    awaitingResult = true;
+                    timeoutHandler.removeCallbacks(pingTimeout);
+                    timeoutHandler.postDelayed(pingTimeout, PING_TIMEOUT_MS);
+                } catch (Exception e) {
+                    // e.g. SmsManager unavailable, no SEND_SMS, radio off
+                    Log.e(TAG, "sendDataMessage failed", e);
+                    awaitingResult = false;
+                    statusText.setText(R.string.notsent);
+                    resultText.setText(R.string.offline);
+                }
             }
         });
 
@@ -221,6 +251,12 @@ public final class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         unregisterReceiver(br);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        timeoutHandler.removeCallbacks(pingTimeout);
     }
 
     @Override
@@ -341,8 +377,16 @@ public final class MainActivity extends AppCompatActivity {
             }
 
             if (SENT.equalsIgnoreCase(intent.getAction())) {
-                statusText.setText((getResultCode() == RESULT_OK ? R.string.sent : R.string.notsent));
-                resultText.setText(null);
+                if (getResultCode() == RESULT_OK) {
+                    // Sent OK; keep waiting for the delivery report (or the timeout).
+                    statusText.setText(R.string.sent);
+                } else {
+                    // Could not even send it -> resolve to offline immediately.
+                    statusText.setText(R.string.notsent);
+                    awaitingResult = false;
+                    timeoutHandler.removeCallbacks(pingTimeout);
+                    resultText.setText(R.string.offline);
+                }
             } else if (DELIVER.equalsIgnoreCase(intent.getAction())) {
                 boolean delivered = false;
                 if (intent.hasExtra("pdu")) {
@@ -360,6 +404,8 @@ public final class MainActivity extends AppCompatActivity {
                         }
                     }
                 }
+                awaitingResult = false;
+                timeoutHandler.removeCallbacks(pingTimeout);
                 resultText.setText(delivered ? R.string.delivered : R.string.offline);
             }
 
