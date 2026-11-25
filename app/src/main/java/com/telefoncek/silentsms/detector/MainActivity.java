@@ -90,11 +90,11 @@ public final class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Android 15+ (API 35) / Android 16 (API 36) enforce edge-to-edge and remove
-        // the opt-out, so content is drawn behind the system bars. The AppCompat action
-        // bar already handles the status-bar (top) inset; here we pad the content for the
-        // navigation bar (bottom) and any display cutouts on the sides.
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, windowInsets) -> {
+        // Edge-to-edge is enforced on Android 15+/16. AppCompat's action bar already
+        // offsets the content below the status bar + action bar (via android.R.id.content),
+        // so here we only pad our own root for the navigation bar and side cutouts.
+        // (We must NOT touch android.R.id.content's padding, or that top offset is lost.)
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.rootMain), (v, windowInsets) -> {
             Insets bars = windowInsets.getInsets(
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             v.setPadding(bars.left, 0, bars.right, bars.bottom);

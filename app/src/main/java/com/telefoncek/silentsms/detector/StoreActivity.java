@@ -51,9 +51,9 @@ public class StoreActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_store);
 
-        // Edge-to-edge is enforced on Android 15+/16; pad content for the navigation
-        // bar and display cutouts (the action bar handles the status-bar inset).
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, windowInsets) -> {
+        // Pad only our own root for the navigation bar + side cutouts; the action bar
+        // handles the top inset (see MainActivity for the rationale).
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.rootStore), (v, windowInsets) -> {
             Insets bars = windowInsets.getInsets(
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             v.setPadding(bars.left, 0, bars.right, bars.bottom);

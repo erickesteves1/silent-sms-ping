@@ -14,8 +14,8 @@ android {
         applicationId 'com.telefoncek.silentsms.detector'
         minSdk 23
         targetSdk 36
-        versionCode 7
-        versionName "5"
+        versionCode 8
+        versionName "5.1"
     }
 
     buildTypes {
